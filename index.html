@@ -124,31 +124,37 @@
         }
 
         /* ----- RESPONSIVE ----- */
-        @media (max-width: 840px) {
-            .game-wrapper {
-                padding: 16px 16px 20px;
-                border-radius: 20px;
-            }
-            .game-header {
-                font-size: 1rem;
-                padding-bottom: 12px;
-            }
-            .game-header .score span,
-            .game-header .lives span {
-                font-size: 1.3rem;
-            }
-            .logos {
-                gap: 18px;
-                margin-bottom: 10px;
-            }
-            .logo-item {
-                font-size: 2rem;
-            }
-            .game-controls button {
-                padding: 8px 20px;
-                font-size: 1rem;
-            }
-        }
+       /* RESPONSIVE */
+@media (max-width: 840px) {
+  .game-wrapper { padding: 16px 16px 20px; border-radius: 20px; }
+  .game-header { font-size: 1rem; padding-bottom: 12px; }
+  .game-header .score span, .game-header .lives span { font-size: 1.3rem; }
+  .logos { gap: 18px; margin-bottom: 10px; }
+  
+  /* 👇 Ubah ini (untuk layar sedang/tablet) */
+  .logo-item { 
+    width: 45px; 
+    height: 45px; 
+  }
+  
+  .game-controls button { padding: 8px 20px; font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .game-wrapper { padding: 10px 10px 14px; border-radius: 14px; }
+  .game-header { font-size: 0.85rem; padding-bottom: 8px; flex-wrap: wrap; gap: 4px; }
+  .game-header .score span, .game-header .lives span { font-size: 1.1rem; }
+  .logos { gap: 10px; margin-bottom: 6px; }
+  
+  /* 👇 Ubah ini (untuk layar HP) */
+  .logo-item { 
+    width: 35px; 
+    height: 35px; 
+  }
+  
+  .game-controls { gap: 10px; flex-wrap: wrap; }
+  .game-controls button { padding: 6px 14px; font-size: 0.85rem; }
+}
 
         @media (max-width: 480px) {
             .game-wrapper {
