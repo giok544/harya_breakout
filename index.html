@@ -32,28 +32,25 @@
             width: 100%;
         }
 
-        /* ----- 5 LOGO DI ATAS ----- */
-        /* ----- 5 LOGO DI ATAS ----- */
-.logos {
-  display: flex;
-  justify-content: center;
-  gap: 28px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
+        /* ----- 5 LOGO DI ATAS (revisi ukuran & responsif) ----- */
+        .logos {
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
 
-.logo-item {
-  /* 👇 UBAH BAGIAN INI 👇 */
-  width: 60px;           /* Atur lebar gambar logo (misal 60px) */
-  height: 60px;          /* Atur tinggi gambar logo */
-  object-fit: contain;   /* Penting! Agar gambar tidak gepeng/terdistorsi */
-  /* 👆 UBAH BAGIAN INI 👆 */
+        .logo-item {
+            width: 60px;          /* Ukuran logo desktop */
+            height: 60px;
+            object-fit: contain;  /* Mencegah gambar terdistorsi */
+            line-height: 1;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            cursor: default;
+            filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+        }
 
-  line-height: 1;
-  transition: transform 0.2s ease, filter 0.2s ease;
-  cursor: default;
-  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
-}
         /* ----- HEADER (skor & nyawa) ----- */
         .game-header {
             display: flex;
@@ -123,69 +120,32 @@
             color: #ffffff;
         }
 
-        /* ----- RESPONSIVE ----- */
-       /* RESPONSIVE */
-@media (max-width: 840px) {
-  .game-wrapper { padding: 16px 16px 20px; border-radius: 20px; }
-  .game-header { font-size: 1rem; padding-bottom: 12px; }
-  .game-header .score span, .game-header .lives span { font-size: 1.3rem; }
-  .logos { gap: 18px; margin-bottom: 10px; }
-  
-  /* 👇 Ubah ini (untuk layar sedang/tablet) */
-  .logo-item { 
-    width: 45px; 
-    height: 45px; 
-  }
-  
-  .game-controls button { padding: 8px 20px; font-size: 1rem; }
-}
-
-@media (max-width: 480px) {
-  .game-wrapper { padding: 10px 10px 14px; border-radius: 14px; }
-  .game-header { font-size: 0.85rem; padding-bottom: 8px; flex-wrap: wrap; gap: 4px; }
-  .game-header .score span, .game-header .lives span { font-size: 1.1rem; }
-  .logos { gap: 10px; margin-bottom: 6px; }
-  
-  /* 👇 Ubah ini (untuk layar HP) */
-  .logo-item { 
-    width: 35px; 
-    height: 35px; 
-  }
-  
-  .game-controls { gap: 10px; flex-wrap: wrap; }
-  .game-controls button { padding: 6px 14px; font-size: 0.85rem; }
-}
+        /* ----- RESPONSIVE (revisi ukuran logo) ----- */
+        @media (max-width: 840px) {
+            .game-wrapper { padding: 16px 16px 20px; border-radius: 20px; }
+            .game-header { font-size: 1rem; padding-bottom: 12px; }
+            .game-header .score span,
+            .game-header .lives span { font-size: 1.3rem; }
+            .logos { gap: 18px; margin-bottom: 10px; }
+            .logo-item {
+                width: 45px;
+                height: 45px;
+            }
+            .game-controls button { padding: 8px 20px; font-size: 1rem; }
+        }
 
         @media (max-width: 480px) {
-            .game-wrapper {
-                padding: 10px 10px 14px;
-                border-radius: 14px;
-            }
-            .game-header {
-                font-size: 0.85rem;
-                padding-bottom: 8px;
-                flex-wrap: wrap;
-                gap: 4px;
-            }
+            .game-wrapper { padding: 10px 10px 14px; border-radius: 14px; }
+            .game-header { font-size: 0.85rem; padding-bottom: 8px; flex-wrap: wrap; gap: 4px; }
             .game-header .score span,
-            .game-header .lives span {
-                font-size: 1.1rem;
-            }
-            .logos {
-                gap: 12px;
-                margin-bottom: 6px;
-            }
+            .game-header .lives span { font-size: 1.1rem; }
+            .logos { gap: 10px; margin-bottom: 6px; }
             .logo-item {
-                font-size: 1.6rem;
+                width: 35px;
+                height: 35px;
             }
-            .game-controls {
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-            .game-controls button {
-                padding: 6px 14px;
-                font-size: 0.85rem;
-            }
+            .game-controls { gap: 10px; flex-wrap: wrap; }
+            .game-controls button { padding: 6px 14px; font-size: 0.85rem; }
         }
     </style>
 </head>
@@ -193,15 +153,13 @@
 
     <div class="game-wrapper">
 
-        <!-- ===== 5 LOGO ===== -->
-  <!-- ===== 5 LOGO DI ATAS ===== -->
-<div class="logos">
-  <img src="h.jpeg" alt="Logo 1" class="logo-item">
-  <img src="one.jpeg" alt="Logo 2" class="logo-item">
-  <img src="rpl.jpeg" alt="Logo 3" class="logo-item">
-  <img src="smk.jpeg" alt="Logo 4" class="logo-item">
-  <img src="mk.jpeg" alt="Logo 5" class="logo-item">
-</div>
+        <!-- ===== 5 LOGO DI ATAS (menggunakan tag img) ===== -->
+        <div class="logos">
+            <img src="h.jpeg" alt="Logo 1" class="logo-item">
+            <img src="one.jpeg" alt="Logo 2" class="logo-item">
+            <img src="rpl.jpeg" alt="Logo 3" class="logo-item">
+            <img src="smk.jpeg" alt="Logo 4" class="logo-item">
+            <img src="mk.jpeg" alt="Logo 5" class="logo-item">
         </div>
 
         <!-- Header Skor & Nyawa -->
@@ -223,7 +181,7 @@
 
     <script>
         // ============================================================
-        //  BREAKOUT — IMPLEMENTASI LENGKAP
+        //  BREAKOUT — IMPLEMENTASI LENGKAP (tetap sama, tanpa perubahan)
         // ============================================================
 
         (function() {
