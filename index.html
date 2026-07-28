@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Breakout Game</title>
+    <style>
+        /* ----- RESET & GLOBAL ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: #0b0e1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* ----- KONTAINER UTAMA ----- */
+        .game-wrapper {
+            background: #141828;
+            padding: 24px 30px 30px;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 2px #2a3142 inset;
+        }
+
+        /* ----- HEADER (skor & nyawa) ----- */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 6px 16px 6px;
+            color: #c8d0e6;
+            font-weight: 600;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+        }
+
+        .game-header .score span {
+            color: #f7e05e;
+            font-size: 1.6rem;
+            margin-left: 6px;
+        }
+
+        .game-header .lives span {
+            color: #ff6b7c;
+            font-size: 1.6rem;
+            margin-left: 6px;
+        }
+
+        /* ----- CANVAS ----- */
+        #gameCanvas {
+            display: block;
+            width: 780px;
+            height: 500px;
+            background: #1b212f;
+            border-radius: 16px;
+            box-shadow: 0 0 0 2px #2f384e, 0 10px 30px rgba(0, 0, 0, 0.6);
+            cursor: none;
+            touch-action: none;
+        }
+
+        /* ----- TOMBOL KONTROL (opsional) ----- */
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .game-controls button {
+            background: #262f42;
+            border: none;
+            border-radius: 40px;
+            color: #d0d9f0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 10px 28px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #10141f, 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.08s ease;
+            letter-spacing: 0.3px;
+        }
+
+        .game-controls button:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #10141f;
+        }
+
+        .game-controls button:hover {
+            background: #2f3a52;
+            color: #ffffff;
+        }
+
+        /* ----- RESPONSIVE ----- */
+        @media (max-width: 840px) {
+            .game-wrapper {
+                padding: 16px 16px 20px;
+                border-radius: 20px;
+            }
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 780 / 500;
+            }
+            .game-header {
+                font-size: 1rem;
+                padding-bottom: 12px;
+            }
+            .game-header .score span,
+            .game-header .lives span {
+                font-size: 1.3rem;
+            }
+            .game-controls button {
+                padding: 8px 20px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-wrapper {
+                padding: 10px 10px 14px;
+                border-radius: 14px;
+            }
+            .game-header {
+                font-size: 0.85rem;
+                padding-bottom: 8px;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .game-header .score span,
+            .game-header .lives span {
+                font-size: 1.1rem;
+            }
+            .game-controls {
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            .game-controls button {
+                padding: 6px 14px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-wrapper">
+
+        <!-- Header Skor & Nyawa -->
+        <div class="game-header">
+            <div class="score">🏆 Skor <span id="scoreDisplay">0</span></div>
+            <div class="lives">❤️ Nyawa <span id="livesDisplay">3</span></div>
+        </div>
+
+        <!-- Canvas Game -->
+        <canvas id="gameCanvas" width="780" height="500"></canvas>
+
+        <!-- Tombol Kontrol -->
+        <div class="game-controls">
+            <button id="resetBtn">🔄 Mulai Ulang</button>
+            <button id="pauseBtn">⏸️ Jeda</button>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        //  BREAKOUT — IMPLEMENTASI LENGKAP
+        // ============================================================
+
+        (function() {
+            'use strict';
+
+            // ----- CANVAS & KONTEKS -----
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = 780,
+                H = 500;
+
+            // ----- ELEMEN HTML -----
+            const scoreSpan = document.getElementById('scoreDisplay');
+            const livesSpan = document.getElementById('livesDisplay');
+            const resetBtn = document.getElementById('resetBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+
+            // ----- KONSTANTA GAME -----
+            const PADDLE_WIDTH = 110;
+            const PADDLE_HEIGHT = 16;
+            const PADDLE_RADIUS = 8;
+            const BALL_RADIUS = 9;
+            const BALL_SPEED_INIT = 5.0;
+            const BALL_SPEED_MAX = 9.0;
+            const BALL_SPEED_INCREMENT = 0.25;
+
+            // Susunan brick: 8 kolom × 6 baris
+            const BRICK_COLS = 8;
+            const BRICK_ROWS = 6;
+            const BRICK_WIDTH = 78;
+            const BRICK_HEIGHT = 22;
+            const BRICK_PADDING = 6;
+            const BRICK_TOP_OFFSET = 50;
+
+            // Warna brick per baris (dari atas ke bawah)
+            const BRICK_COLORS = [
+                '#f94144', // merah
+                '#f8961e', // oranye
+                '#f9c74f', // kuning
+                '#90be6d', // hijau
+                '#577590', // biru
+                '#9b5de5' // ungu
+            ];
+
+            // ----- STATE GAME -----
+            let paddle = { x: W / 2 - PADDLE_WIDTH / 2, y: H - 40 };
+            let ball = { x: W / 2, y: H - 60, dx: 0, dy: 0, radius: BALL_RADIUS };
+            let bricks = [];
+            let score = 0;
+            let lives = 3;
+            let gameState = 'playing'; // 'playing' | 'paused' | 'gameover' | 'win'
+            let animationId = null;
+            let isGameLoopRunning = false;
+
+            // Kontrol keyboard
+            let keys = {
+                left: false,
+                right: false
+            };
+
+            // ----- INISIALISASI BRICK -----
+            function initBricks() {
+                bricks = [];
+                for (let row = 0; row < BRICK_ROWS; row++) {
+                    for (let col = 0; col < BRICK_COLS; col++) {
+                        const x = col * (BRICK_WIDTH + BRICK_PADDING) + BRICK_PADDING / 2;
+                        const y = row * (BRICK_HEIGHT + BRICK_PADDING) + BRICK_PADDING / 2 + BRICK_TOP_OFFSET;
+                        bricks.push({
+                            x: x,
+                            y: y,
+                            w: BRICK_WIDTH,
+                            h: BRICK_HEIGHT,
+                            alive: true,
+                            color: BRICK_COLORS[row % BRICK_COLORS.length],
+                            row: row
+                        });
+                    }
+                }
+            }
+
+            // ----- RESET BOLA -----
+            function resetBall(direction) {
+                ball.x = paddle.x + PADDLE_WIDTH / 2;
+                ball.y = paddle.y - BALL_RADIUS;
+                // Arah awal: sedikit acak ke kiri/kanan
+                const angle = (Math.random() * 0.8 + 0.2) * (direction || 1);
+                ball.dx = BALL_SPEED_INIT * Math.cos(angle) * (Math.random() > 0.5 ? 1 : -1);
+                ball.dy = -BALL_SPEED_INIT * Math.sin(angle);
+                // Pastikan tidak terlalu datar
+                if (Math.abs(ball.dx) < 1.2) {
+                    ball.dx = 1.8 * (ball.dx > 0 ? 1 : -1);
+                }
+            }
+
+            // ----- RESET GAME (FULL) -----
+            function resetGame() {
+                // Hentikan loop lama
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                    isGameLoopRunning = false;
+                }
+
+                paddle.x = W / 2 - PADDLE_WIDTH / 2;
+                paddle.y = H - 40;
+
+                score = 0;
+                lives = 3;
+                gameState = 'playing';
+                pauseBtn.textContent = '⏸️ Jeda';
+
+                initBricks();
+                resetBall(1);
+                updateUI();
+
+                // Mulai loop
+                if (!isGameLoopRunning) {
+                    isGameLoopRunning = true;
+                    gameLoop();
+                }
+            }
+
+            // ----- UPDATE UI (skor & nyawa) -----
+            function updateUI() {
+                scoreSpan.textContent = score;
+                livesSpan.textContent = lives;
+            }
+
+            // ----- PAUSE TOGGLE -----
+            function togglePause() {
+                if (gameState === 'gameover' || gameState === 'win') {
+                    // Saat game over / win, tombol pause tidak berfungsi
+                    return;
+                }
+                if (gameState === 'playing') {
+                    gameState = 'paused';
+                    pauseBtn.textContent = '▶️ Mainkan';
+                } else if (gameState === 'paused') {
+                    gameState = 'playing';
+                    pauseBtn.textContent = '⏸️ Jeda';
+                }
+            }
+
+            // ----- DETEKSI TABRAKAN BOLA DENGAN BRICK -----
+            function ballBrickCollision(brick) {
+                // Cari titik terdekat pada brick dengan pusat bola
+                const cx = ball.x;
+                const cy = ball.y;
+                const rx = brick.x;
+                const ry = brick.y;
+                const rw = brick.w;
+                const rh = brick.h;
+
+                const closestX = Math.max(rx, Math.min(cx, rx + rw));
+                const closestY = Math.max(ry, Math.min(cy, ry + rh));
+
+                const distX = cx - closestX;
+                const distY = cy - closestY;
+                const dist = Math.sqrt(distX * distX + distY * distY);
+
+                return dist < ball.radius;
+            }
+
+            // ----- TABRAKAN BOLA DENGAN PADDLE (dengan efek pantulan) -----
+            function ballPaddleCollision() {
+                // Kotak paddle (dengan radius sudut dibulatkan)
+                const px = paddle.x,
+                    py = paddle.y;
+                const pw = PADDLE_WIDTH,
+                    ph = PADDLE_HEIGHT;
+                const cx = ball.x,
+                    cy = ball.y,
+                    r = ball.radius;
+
+                // Cek tabrakan dengan persegi panjang paddle
+                const closestX = Math.max(px, Math.min(cx, px + pw));
+                const closestY = Math.max(py, Math.min(cy, py + ph));
+                const distX = cx - closestX;
+                const distY = cy - closestY;
+                const dist = Math.sqrt(distX * distX + distY * distY);
+
+                if (dist < r) {
+                    // Posisi relatif bola terhadap paddle (0..1)
+                    const hitPos = (ball.x - paddle.x) / PADDLE_WIDTH;
+                    const clamped = Math.max(0, Math.min(1, hitPos));
+                    // Sudut pantulan: -60° .. +60° (di tengah 0° = vertikal ke atas)
+                    const angle = (clamped - 0.5) * 1.2; // radian
+                    const speed = Math.min(BALL_SPEED_MAX, Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy) + BALL_SPEED_INCREMENT);
+                    ball.dx = speed * Math.sin(angle);
+                    ball.dy = -speed * Math.cos(angle);
+                    // Dorong bola keluar agar tidak menempel
+                    ball.y = paddle.y - ball.radius - 1;
+                    return true;
+                }
+                return false;
+            }
+
+            // ----- UPDATE FISIKA -----
+            function updatePhysics() {
+                if (gameState !== 'playing') return;
+
+                // Gerakkan bola
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // ----- Pantulan dinding -----
+                // Kiri / kanan
+                if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.dx = -ball.dx;
+                } else if (ball.x + ball.radius > W) {
+                    ball.x = W - ball.radius;
+                    ball.dx = -ball.dx;
+                }
+                // Atas
+                if (ball.y - ball.radius < 0) {
+                    ball.y = ball.radius;
+                    ball.dy = -ball.dy;
+                }
+
+                // ----- Bola jatuh (kehilangan nyawa) -----
+                if (ball.y + ball.radius > H) {
+                    lives--;
+                    updateUI();
+                    if (lives <= 0) {
+                        gameState = 'gameover';
+                        pauseBtn.textContent = '🔄 Main Lagi';
+                        return;
+                    } else {
+                        resetBall(1);
+                        // Taruh bola di atas paddle
+                        ball.x = paddle.x + PADDLE_WIDTH / 2;
+                        ball.y = paddle.y - ball.radius;
+                        return;
+                    }
+                }
+
+                // ----- Pantulan paddle -----
+                ballPaddleCollision();
+
+                // ----- Pantulan brick -----
+                for (let i = 0; i < bricks.length; i++) {
+                    const brick = bricks[i];
+                    if (!brick.alive) continue;
+                    if (ballBrickCollision(brick)) {
+                        brick.alive = false;
+                        score += 10 + (BRICK_ROWS - brick.row) * 2;
+                        updateUI();
+
+                        // Tentukan arah pantulan berdasarkan posisi relatif
+                        const overlapX = (ball.x < brick.x + brick.w / 2) ?
+                            (ball.x + ball.radius - brick.x) :
+                            (brick.x + brick.w - (ball.x - ball.radius));
+                        const overlapY = (ball.y < brick.y + brick.h / 2) ?
+                            (ball.y + ball.radius - brick.y) :
+                            (brick.y + brick.h - (ball.y - ball.radius));
+
+                        if (overlapX < overlapY) {
+                            ball.dx = -ball.dx;
+                        } else {
+                            ball.dy = -ball.dy;
+                        }
+
+                        // Cek apakah semua brick hancur = MENANG
+                        const allDead = bricks.every(b => !b.alive);
+                        if (allDead) {
+                            gameState = 'win';
+                            pauseBtn.textContent = '🎉 Menang!';
+                        }
+                        break; // hanya satu brick per frame
+                    }
+                }
+
+                // ----- Gerakan paddle (keyboard) -----
+                const PADDLE_SPEED = 7;
+                if (keys.left && paddle.x > 0) {
+                    paddle.x -= PADDLE_SPEED;
+                    if (paddle.x < 0) paddle.x = 0;
+                }
+                if (keys.right && paddle.x + PADDLE_WIDTH < W) {
+                    paddle.x += PADDLE_SPEED;
+                    if (paddle.x + PADDLE_WIDTH > W) paddle.x = W - PADDLE_WIDTH;
+                }
+
+                // Jika bola di atas paddle dan belum meluncur (keadaan diam) — tidak digunakan
+                // tapi kita biarkan saja.
+            }
+
+            // ----- GAMBAR SEMUA ELEMEN -----
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+
+                // ----- Gambar brick -----
+                for (const brick of bricks) {
+                    if (!brick.alive) continue;
+                    ctx.shadowColor = 'rgba(255,255,255,0.15)';
+                    ctx.shadowBlur = 8;
+                    ctx.fillStyle = brick.color;
+                    ctx.beginPath();
+                    const x = brick.x,
+                        y = brick.y,
+                        w = brick.w,
+                        h = brick.h;
+                    const r = 4;
+                    ctx.moveTo(x + r, y);
+                    ctx.lineTo(x + w - r, y);
+                    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                    ctx.lineTo(x + w, y + h - r);
+                    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                    ctx.lineTo(x + r, y + h);
+                    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                    ctx.lineTo(x, y + r);
+                    ctx.quadraticCurveTo(x, y, x + r, y);
+                    ctx.closePath();
+                    ctx.fill();
+                    // efek highlight tipis
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+
+                // ----- Gambar paddle (dengan bayangan & gradasi) -----
+                ctx.shadowColor = 'rgba(255,255,255,0.25)';
+                ctx.shadowBlur = 18;
+                const grad = ctx.createLinearGradient(paddle.x, paddle.y, paddle.x, paddle.y + PADDLE_HEIGHT);
+                grad.addColorStop(0, '#7f9cf5');
+                grad.addColorStop(1, '#4f6cdb');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                const px = paddle.x,
+                    py = paddle.y,
+                    pw = PADDLE_WIDTH,
+                    ph = PADDLE_HEIGHT,
+                    rad = PADDLE_RADIUS;
+                ctx.moveTo(px + rad, py);
+                ctx.lineTo(px + pw - rad, py);
+                ctx.quadraticCurveTo(px + pw, py, px + pw, py + rad);
+                ctx.lineTo(px + pw, py + ph - rad);
+                ctx.quadraticCurveTo(px + pw, py + ph, px + pw - rad, py + ph);
+                ctx.lineTo(px + rad, py + ph);
+                ctx.quadraticCurveTo(px, py + ph, px, py + ph - rad);
+                ctx.lineTo(px, py + rad);
+                ctx.quadraticCurveTo(px, py, px + rad, py);
+                ctx.closePath();
+                ctx.fill();
+                // highlight atas
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath();
+                ctx.rect(px + 12, py + 2, pw - 24, 5);
+                ctx.fill();
+
+                // ----- Gambar bola (dengan efek glow) -----
+                ctx.shadowColor = '#a0c4ff';
+                ctx.shadowBlur = 28;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                const gradBall = ctx.createRadialGradient(
+                    ball.x - 3, ball.y - 4, 2,
+                    ball.x, ball.y, ball.radius + 2
+                );
+                gradBall.addColorStop(0, '#ffffff');
+                gradBall.addColorStop(0.5, '#b8d4ff');
+                gradBall.addColorStop(1, '#5a8cdf');
+                ctx.fillStyle = gradBall;
+                ctx.fill();
+                // titik pantul
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.beginPath();
+                ctx.arc(ball.x - 2.5, ball.y - 3.5, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // ----- Tampilkan status (pause / gameover / win) -----
+                ctx.shadowBlur = 0;
+                ctx.font = 'bold 34px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (gameState === 'paused') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.fillStyle = '#f0f4ff';
+                    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                    ctx.shadowBlur = 20;
+                    ctx.fillText('⏸️ JEDA', W / 2, H / 2);
+                } else if (gameState === 'gameover') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.fillStyle = '#ff6b7c';
+                    ctx.shadowColor = '#ff3b4a';
+                    ctx.shadowBlur = 30;
+                    ctx.fillText('💔 GAME OVER', W / 2, H / 2 - 20);
+                    ctx.font = '20px "Segoe UI", sans-serif';
+                    ctx.fillStyle = '#d0d9f0';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText('Tekan "Mulai Ulang"', W / 2, H / 2 + 40);
+                } else if (gameState === 'win') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.fillStyle = '#f7e05e';
+                    ctx.shadowColor = '#f7d44a';
+                    ctx.shadowBlur = 40;
+                    ctx.fillText('🎉 SELAMAT!', W / 2, H / 2 - 20);
+                    ctx.font = '22px "Segoe UI", sans-serif';
+                    ctx.fillStyle = '#d0d9f0';
+                    ctx.shadowBlur = 10;
+                    ctx.fillText('Skor akhir: ' + score, W / 2, H / 2 + 40);
+                }
+
+                // Reset shadow
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+            }
+
+            // ----- GAME LOOP -----
+            function gameLoop() {
+                if (!isGameLoopRunning) return;
+
+                updatePhysics();
+                draw();
+
+                // Lanjutkan loop
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            // ----- EVENT LISTENER: KEYBOARD -----
+            function keyDownHandler(e) {
+                const key = e.key;
+                if (key === 'ArrowLeft' || key === 'Left' || key === 'a' || key === 'A') {
+                    keys.left = true;
+                    e.preventDefault();
+                } else if (key === 'ArrowRight' || key === 'Right' || key === 'd' || key === 'D') {
+                    keys.right = true;
+                    e.preventDefault();
+                } else if (key === ' ' || key === 'Space') {
+                    e.preventDefault();
+                    togglePause();
+                } else if (key === 'r' || key === 'R') {
+                    resetGame();
+                }
+            }
+
+            function keyUpHandler(e) {
+                const key = e.key;
+                if (key === 'ArrowLeft' || key === 'Left' || key === 'a' || key === 'A') {
+                    keys.left = false;
+                    e.preventDefault();
+                } else if (key === 'ArrowRight' || key === 'Right' || key === 'd' || key === 'D') {
+                    keys.right = false;
+                    e.preventDefault();
+                }
+                // Space & R tidak perlu di-prevent di sini
+            }
+
+            // ----- EVENT: MOUSE / TOUCH untuk paddle -----
+            function handleMove(e) {
+                if (gameState === 'gameover' || gameState === 'win') return;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+
+                let clientX;
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    e.preventDefault();
+                } else {
+                    clientX = e.clientX;
+                }
+
+                const canvasX = (clientX - rect.left) * scaleX;
+                const clamped = Math.max(0, Math.min(W - PADDLE_WIDTH, canvasX - PADDLE_WIDTH / 2));
+                paddle.x = clamped;
+
+                // Jika bola masih di atas paddle (belum meluncur) — kita ikutkan
+                // tapi dalam versi ini bola langsung meluncur saat reset, jadi tidak perlu.
+            }
+
+            function handleLeave() {
+                // Tidak melakukan apa-apa, paddle tetap di posisi terakhir.
+            }
+
+            // ----- PASANG EVENT -----
+            window.addEventListener('keydown', keyDownHandler);
+            window.addEventListener('keyup', keyUpHandler);
+
+            canvas.addEventListener('mousemove', handleMove);
+            canvas.addEventListener('touchmove', handleMove, { passive: false });
+            canvas.addEventListener('touchstart', handleMove, { passive: false });
+            canvas.addEventListener('mouseleave', handleLeave);
+
+            // ----- TOMBOL -----
+            resetBtn.addEventListener('click', resetGame);
+            pauseBtn.addEventListener('click', togglePause);
+
+            // ----- MULAI GAME -----
+            resetGame();
+
+            // ----- PREVENT SCROLL dengan panah & spasi -----
+            window.addEventListener('keydown', function(e) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Space'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // ----- CLEANUP (opsional) -----
+            // Tidak ada cleanup khusus karena halaman dimuat ulang jika di-refresh.
+
+            console.log('🎮 Breakout siap dimainkan!');
+            console.log('🔼 Panah kiri/kanan atau A/D untuk gerakkan paddle.');
+            console.log('␣ Spasi untuk jeda, R untuk reset.');
+
+        })();
+    </script>
+
+</body>
+</html>
